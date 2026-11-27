@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />
+    <link rel="stylesheet" href="assets/css/app.css" type="text/css" />
+    <title>Moto X3M - Bike Stunt Racing</title>
+    <script>
+        // ⚡ GPU & Engine Optimization
+        window.PhaserGlobal = {
+            stopProcess: false,
+            fakeStarting: false
+        };
+        // Auto-resume AudioContext on first interaction
+        ['click', 'keydown', 'touchstart'].forEach(function (evt) {
+            window.addEventListener(evt, function resumeAudio() {
+                var AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    var ctx = new AudioContext();
+                    if (ctx.state === 'suspended') ctx.resume();
+                }
+                window.removeEventListener(evt, resumeAudio);
+            }, { once: true, passive: true });
+        });
+    </script>
+    <style>
+        #orientation,
+        #loader {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #080910;
+        }
+
+        #content {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            transform: translateZ(0);
+            will-change: transform;
+            backface-visibility: hidden;
+            image-rendering: -webkit-optimize-contrast;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="content"></div>
+    <div id="orientation"></div>
+    <div id="loader"></div>
+
+    <script type="text/javascript" src="poki-sdk.js?v=4.0"></script>
+    <script type="text/javascript" src="assets/box2dweb/nape.min.js?v=4.0"></script>
+    <script type="text/javascript" src="assets/box2dweb/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="assets/box2dweb/easeljs-0.8.2.combined.js"></script>
+    <script type="text/javascript" src="assets/box2dweb/bluebird.min.js"></script>
+    <script type="text/javascript" src="assets/box2dweb/phaser.min.js?v=4.0"></script>
+    <script>
+        // 🛡️ Global Exception Guard - Never let unhandled errors stop the browser
+        window.addEventListener('error', function(e) {
+            console.warn('[Global SafeGuard] Suppressed uncaught error:', e.message);
+            e.preventDefault();
+            return true;
+        });
+
+        // 🛡️ Safeguards against missing texture atlas frames & unknown themes
+        if (window.Phaser) {
+            if (Phaser.RequestAnimationFrame) {
+                var origRAF = Phaser.RequestAnimationFrame.prototype.updateRAF;
+                Phaser.RequestAnimationFrame.prototype.updateRAF = function (rafTime) {
+                    if (this.isRunning) {
+                        try {
+                            this.game.update(Math.floor(rafTime));
+                        } catch (err) {
+                            console.error('[SafeGuard] RAF update error caught & game loop preserved:', err);
+                        }
+                        this._timeOutID = window.requestAnimationFrame(this._onLoop);
+                    }
+                };
+            }
+
+            if (Phaser.StateManager) {
+                var origSMUpdate = Phaser.StateManager.prototype.update;
+                Phaser.StateManager.prototype.update = function () {
+                    try {
+                        origSMUpdate.apply(this, arguments);
+                    } catch (err) {
+                        console.error('[SafeGuard] State update error caught & game loop preserved:', err);
+                    }
+                };
+            }
+
+            if (Phaser.Animation) {
+                var _origUpdateCurrentFrame = Phaser.Animation.prototype.updateCurrentFrame;
+                Phaser.Animation.prototype.updateCurrentFrame = function (signal, parent) {
+                    if (!this._frameData || !this._frames || this._frameIndex >= this._frames.length) {
+                        return false;
+                    }
+                    var frame = this._frameData.getFrame(this._frames[this._frameIndex]);
+                    if (!frame) return false;
+                    return _origUpdateCurrentFrame.apply(this, arguments);
+                };
+            }
+
+            // Fallback for missing atlas keys (e.g. theme3 -> theme0)
+            if (Phaser.Cache) {
+                var origGetImage = Phaser.Cache.prototype.getImage;
+                Phaser.Cache.prototype.getImage = function (key, buildFrame) {
+                    if (typeof key === 'string' && key.startsWith('theme') && !this.checkImageKey(key)) {
+                        key = 'theme0';
+                    }
+                    return origGetImage.call(this, key, buildFrame);
+                };
+
+                var origGetFrameData = Phaser.Cache.prototype.getFrameData;
+                Phaser.Cache.prototype.getFrameData = function (key) {
+                    if (typeof key === 'string' && key.startsWith('theme') && !this._frameData[key]) {
+                        key = 'theme0';
+                    }
+                    return origGetFrameData.call(this, key);
+                };
+            }
+
+            // Prevent Sprite/Image from displaying entire raw atlas if frame name is missing
+            var patchLoadTexture = function (proto) {
+                if (!proto || !proto.loadTexture) return;
+                var origLoadTexture = proto.loadTexture;
+                proto.loadTexture = function (key, frame, stopAnimation) {
+                    if (typeof key === 'string' && this.game && this.game.cache && this.game.cache.checkImageKey(key)) {
+                        var img = this.game.cache.getImage(key, true);
+                        if (img && img.frameData && frame !== undefined && frame !== null && frame !== 0) {
+                            var fd = img.frameData;
+                            if (typeof frame === 'string' && !fd.getFrameByName(frame)) {
+                                console.warn('[SafeGuard] Suppressing missing atlas frame:', key, frame);
+                                this.visible = false;
+                                return;
+                            }
+                        }
+                    }
+                    return origLoadTexture.apply(this, arguments);
+                };
+            };
+            if (Phaser.Sprite) patchLoadTexture(Phaser.Sprite.prototype);
+            if (Phaser.Image) patchLoadTexture(Phaser.Image.prototype);
+        }
+    </script>
+    <script type="text/javascript" src="assets/box2dweb/phaser-cachebuster.min.js"></script>
+    <script type="text/javascript" src="assets/box2dweb/phaser-super-storage.min.js"></script>
+    <script type="text/javascript" src="assets/box2dweb/dragonBones.min.js"></script>
+
+    <script type="text/javascript" src="motox3m.min.js?v=4.0"></script>
+</body>
+
+</html>

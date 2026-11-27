@@ -1,0 +1,39 @@
+# ============================================
+# Pixel Arcade - WordPress .gitignore
+# ============================================
+
+# WordPress Core (kept out to keep repo clean & standard)
+wp-admin/
+wp-includes/
+wp-activate.php
+wp-blog-header.php
+wp-comments-post.php
+wp-cron.php
+wp-links-opml.php
+wp-load.php
+wp-login.php
+wp-mail.php
+wp-settings.php
+wp-signup.php
+wp-trackback.php
+xmlrpc.php
+license.txt
+readme.html
+swiper_rendered.html
+
+# Sensitive database credentials & local config
+wp-config.php
+
+# Bulky third-party plugins & temporary files
+wp-content/plugins/
+wp-content/upgrade/
+
+# Environment and OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+*.log
+*.tmp
+.idea/
+.vscode/
