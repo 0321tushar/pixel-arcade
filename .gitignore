@@ -21,6 +21,9 @@ license.txt
 readme.html
 swiper_rendered.html
 
+# Default unused WordPress themes
+wp-content/themes/twentytwenty*/
+
 # Sensitive database credentials & local config
 wp-config.php
 

@@ -1,0 +1,8 @@
+# Robots.txt for Pixel Arcade Gaming Portal
+User-agent: *
+Allow: /
+Disallow: /wp-admin/
+Allow: /wp-admin/admin-ajax.php
+
+# Google XML Sitemap
+Sitemap: http://localhost/wordpress/wp-sitemap.xml

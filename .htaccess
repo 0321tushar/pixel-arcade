@@ -1,0 +1,27 @@
+
+# 301 Redirect Moto X3M to Soccer Random (Prevent 404)
+Redirect 301 /wordpress/moto-x3m-bike-stunt-racing/ /wordpress/soccer-random-2-player-ragdoll/
+Redirect 301 /wordpress/moto-x3m-bike-stunt-racing /wordpress/soccer-random-2-player-ragdoll/
+
+<IfModule mod_mime.c>
+    AddType application/wasm .wasm
+    AddType application/octet-stream .data
+    AddType application/json .json
+    AddType application/javascript .js
+</IfModule>
+
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteBase /wordpress/
+
+# 301 Redirect Moto X3M to Soccer Random (Prevent 404)
+RewriteRule ^moto-x3m.*$ /wordpress/soccer-random-2-player-ragdoll/ [R=301,L]
+
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /wordpress/index.php [L]
+</IfModule>
+# END WordPress
